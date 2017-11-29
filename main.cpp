@@ -150,11 +150,13 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
   circle(debugFace, rightPupil, 3, 1234);
   circle(debugFace, leftPupil, 3, 1234);
 
-
+  //Find homography. FOV of an eye is assumed to be 120x110 degrees
+  //rot-i is rotation about i axis
   double rotz=atan((rightPupil.y-leftPupil.y)*1.0/(rightPupil.x-leftPupil.x));
   double rotx=-(leftPupil.x-leftLeftCornerRegion.x-(leftLeftCornerRegion.width+leftRightCornerRegion.width)/2.0)*2*acos(0.5)/(leftLeftCornerRegion.width+leftRightCornerRegion.width);
   double roty=(leftEyeRegion.y-leftPupil.y-leftLeftCornerRegion.height/2.0)*(asin(1.0)*2*110)/(180*leftLeftCornerRegion.height);
   int f = 2; // this is also configurable, f=2 should be about 50mm focal length
+  //name to be edited for image
   cv::Mat img=cv::imread("lena.jpg");
   int h = img.rows;
   int w = img.cols;
@@ -163,7 +165,7 @@ float cx = cosf(rotx), sx = sinf(rotx);
 float cy = cosf(roty), sy = sinf(roty);
 float cz = cosf(rotz), sz = sinf(-rotz);
 
-float roto[3][2] = { // last column not needed, our vector has z=0
+float roto[3][2] = { 
     { cz * cy, cz * sy * sx - sz * cx },
     { sz * cy, sz * sy * sx + cz * cx },
     { -sy, cy * sx }
@@ -177,19 +179,16 @@ for (int i = 0; i < 4; i++) {
     ptt[i][1] = h / 2 + (pt[i][0] * roto[1][0] + pt[i][1] * roto[1][1]) * f * h / (f * h + pz);
 }
 
-cv::Mat in_pt = (cv::Mat_<float>(4, 2) << 0, 0, w, 0, w, h, 0, h);
-cv::Mat out_pt = (cv::Mat_<float>(4, 2) << ptt[0][0], ptt[0][1],
-    ptt[1][0], ptt[1][1], ptt[2][0], ptt[2][1], ptt[3][0], ptt[3][1]);
+  cv::Mat in_pt = (cv::Mat_<float>(4, 2) << 0, 0, w, 0, w, h, 0, h);
+  cv::Mat out_pt = (cv::Mat_<float>(4, 2) << ptt[0][0], ptt[0][1], ptt[1][0], ptt[1][1], ptt[2][0], ptt[2][1], ptt[3][0], ptt[3][1]);
 
-cv::Mat transform = cv::getPerspectiveTransform(in_pt, out_pt);
+  cv::Mat transform = cv::getPerspectiveTransform(in_pt, out_pt);
 
-cv::Mat img_in = img.clone();
-cv::warpPerspective(img_in, img, transform, img_in.size());
-imshow("out",img);
-cv::waitKey(500);
-imwrite("fa.jpg",img);
-
-
+  cv::Mat img_in = img.clone();
+  cv::warpPerspective(img_in, img, transform, img_in.size());
+  imshow("out",img);
+  cv::waitKey(500);
+  
   imshow(face_window_name, faceROI);
 //  cv::Rect roiim( cv::Point( 0, 0 ), faceROI.size());
 //  cv::Mat destinationROI = debugImage( roi );
